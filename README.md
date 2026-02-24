@@ -166,7 +166,7 @@ The workflow at `.github/workflows/ci.yml` runs automatically:
 | Trigger | What runs |
 |---------|-----------|
 | Push / PR to `main` or `develop` | Full E2E suite |
-| Nightly at 02:00 UTC | Full E2E suite across Chromium, Firefox, WebKit |
+| Nightly at 02:00 UTC | Full E2E suite on Chromium |
 | Manual (`workflow_dispatch`) | Choose environment (`dev` / `staging` / `prod`) and suite (`e2e` / `regression` / `all`) |
 
 **Artifacts uploaded per run (retained 14 days):**
