@@ -1,0 +1,23 @@
+# Core
+playwright>=1.41.0
+pytest>=8.0.0
+pytest-playwright>=0.4.4
+
+# Parallel execution
+pytest-xdist>=3.5.0
+
+# Reporting
+allure-pytest>=2.13.2
+pytest-html>=4.1.1
+
+# Retry support
+pytest-retry>=0.6.2
+
+# Timeouts
+pytest-timeout>=2.2.0
+
+# Config management
+PyYAML>=6.0.1
+
+# Utilities
+python-dotenv>=1.0.0

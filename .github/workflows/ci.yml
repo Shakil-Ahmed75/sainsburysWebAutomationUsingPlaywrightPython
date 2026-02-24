@@ -1,0 +1,123 @@
+name: Sainsbury's UI Automation
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run E2E suite nightly at 02:00 UTC
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: "staging"
+        type: choice
+        options: [dev, staging, prod]
+      suite:
+        description: "Test suite to run"
+        required: true
+        default: "e2e"
+        type: choice
+        options: [e2e, regression, all]
+
+env:
+  PYTHON_VERSION: "3.11"
+  TEST_ENV: ${{ github.event.inputs.environment || 'staging' }}
+
+jobs:
+  # ------------------------------------------------------------------ #
+  #  E2E Tests
+  # ------------------------------------------------------------------ #
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install ${{ matrix.browser }} --with-deps
+
+      - name: Create reports directories
+        run: mkdir -p reports/screenshots reports/videos reports/traces reports/allure-results reports/html
+
+      - name: Run E2E tests
+        run: |
+          pytest tests/e2e \
+            -m e2e \
+            --env=${{ env.TEST_ENV }} \
+            --browser-type=${{ matrix.browser }} \
+            --headless=true \
+            --alluredir=reports/allure-results \
+            --html=reports/html/e2e_report_${{ matrix.browser }}.html \
+            --self-contained-html \
+            --retries=2
+
+      - name: Upload E2E artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts-${{ matrix.browser }}-${{ github.run_number }}
+          path: |
+            reports/screenshots/
+            reports/traces/
+            reports/html/
+          retention-days: 14
+
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-e2e-${{ matrix.browser }}-${{ github.run_number }}
+          path: reports/allure-results/
+          retention-days: 14
+
+  # ------------------------------------------------------------------ #
+  #  Publish Allure Report
+  # ------------------------------------------------------------------ #
+  report:
+    name: Publish Allure Report
+    runs-on: ubuntu-latest
+    needs: [e2e]
+    if: always()
+
+    steps:
+      - name: Download all Allure results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: allure-results-*
+          merge-multiple: true
+          path: allure-results/
+
+      - name: Publish Allure Report
+        uses: simple-elf/allure-report-action@master
+        with:
+          allure_results: allure-results
+          gh_pages: gh-pages
+          allure_report: allure-report
+          allure_history: allure-history
+
+      - name: Deploy report to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-history

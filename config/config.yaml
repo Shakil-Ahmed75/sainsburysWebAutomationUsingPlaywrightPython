@@ -1,0 +1,47 @@
+environments:
+  dev:
+    base_url: "https://www.sainsburys.co.uk"
+    browser: "chromium"
+    headless: false
+    slow_mo: 100
+    timeout: 30000
+    viewport:
+      width: 1920
+      height: 1080
+
+  staging:
+    base_url: "https://www.sainsburys.co.uk"
+    browser: "chromium"
+    headless: true
+    slow_mo: 0
+    timeout: 30000
+    viewport:
+      width: 1920
+      height: 1080
+
+  prod:
+    base_url: "https://www.sainsburys.co.uk"
+    browser: "chromium"
+    headless: true
+    slow_mo: 0
+    timeout: 30000
+    viewport:
+      width: 1920
+      height: 1080
+
+default_environment: "dev"
+
+reporting:
+  screenshot_on_failure: true
+  video_on_failure: true
+  trace_on_failure: true
+  allure_results_dir: "reports/allure-results"
+  html_report_dir: "reports/html"
+
+retry:
+  max_retries: 2
+  retry_delay: 1
+
+logging:
+  level: "INFO"
+  log_file: "reports/test_run.log"
