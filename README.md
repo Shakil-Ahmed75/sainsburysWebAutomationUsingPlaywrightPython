@@ -1,6 +1,6 @@
 # Sainsbury's Web Automation Framework
 
-A production-ready Playwright + Python test automation framework for [sainsburys.co.uk](https://www.sainsburys.co.uk), built on the **Page Object Model (POM)** pattern.
+A Playwright + Python test automation framework for [sainsburys.co.uk](https://www.sainsburys.co.uk), built on the **Page Object Model (POM)** pattern.
 
 ---
 
@@ -10,11 +10,9 @@ A production-ready Playwright + Python test automation framework for [sainsburys
 |------|---------|
 | [Playwright](https://playwright.dev/python/) | Browser automation |
 | [pytest](https://pytest.org/) | Test runner |
-| [Allure](https://allurereport.org/) | Rich HTML reporting |
-| [pytest-html](https://pytest-html.readthedocs.io/) | Lightweight HTML reports |
-| [pytest-xdist](https://pytest-xdist.readthedocs.io/) | Parallel test execution |
-| [PyYAML](https://pyyaml.org/) | Config management |
-| GitHub Actions | CI/CD pipeline |
+| [Allure](https://allurereport.org/) | HTML reporting |
+| [PyYAML](https://pyyaml.org/) | Config management via `config.yaml` |
+| [python-dotenv](https://pypi.org/project/python-dotenv/) | Environment variable loading |
 
 ---
 
@@ -23,28 +21,27 @@ A production-ready Playwright + Python test automation framework for [sainsburys
 ```
 sainsburysWebAutomationUsingPlaywrightPython/
 ├── config/
-│   ├── config.yaml          # Environment configs (dev/staging/prod)
-│   └── settings.py          # Typed config loader
+│   ├── config.yaml          # Environment configs (dev / staging / prod)
+│   ├── settings.py          # Typed config loader
+│   └── __init__.py
 ├── pages/
-│   ├── base_page.py         # Reusable base class for all POMs
-│   ├── home_page.py         # Home page POM
-│   ├── search_results_page.py
-│   ├── product_page.py
-│   ├── trolley_page.py
-│   └── login_page.py
+│   ├── basePage.py          # Reusable base class for all POMs
+│   ├── homePage.py          # Home page POM
+│   ├── groceriesPage.py     # Groceries page POM
+│   └── loginPage.py         # Login page POM
 ├── tests/
-│   └── e2e/                 # Full user flows
-│       ├── test_search_flow.py
-│       ├── test_add_to_trolley.py
-│       └── test_login.py
+│   └── e2e/
+│       └── testLoginError.py  # Add-to-trolley → login error flow
 ├── utils/
-│   ├── helpers.py           # Utility functions
+│   ├── helpers.py           # Path helpers, random data generators
 │   └── logger.py            # Centralised logging setup
 ├── reports/                 # Generated at runtime (git-ignored)
-├── .github/
-│   └── workflows/
-│       └── ci.yml           # GitHub Actions CI/CD pipeline
-├── conftest.py              # Fixtures (browser, page, POMs, hooks)
+│   ├── screenshots/
+│   ├── videos/
+│   ├── traces/
+│   ├── allure-results/
+│   └── test_run.log
+├── conftest.py              # Fixtures: browser, page, POMs, failure hooks
 ├── pytest.ini               # pytest configuration
 ├── requirements.txt
 ├── .env.example
@@ -62,6 +59,7 @@ git clone <your-repo-url>
 cd sainsburysWebAutomationUsingPlaywrightPython
 
 python -m venv .venv
+
 # Windows
 .venv\Scripts\activate
 # macOS/Linux
@@ -75,23 +73,26 @@ playwright install chromium
 
 ```bash
 cp .env.example .env
-# Edit .env with your settings
+# Edit .env with your preferred settings
 ```
 
 ### 3. Run Tests
 
 ```bash
-# E2E tests against staging, headless
-pytest tests/e2e -m e2e --env=staging --headless=true
+# Run all tests (dev environment, headed)
+pytest
 
-# Specific browser
-pytest tests/e2e --browser-type=firefox --headless=true
+# Run against a specific environment
+pytest --env=staging
 
-# Parallel execution (4 workers)
-pytest tests/e2e -n 4
+# Run headless
+pytest --headless=true
 
-# Generate Allure report
-pytest tests/e2e --alluredir=reports/allure-results
+# Run with a different browser
+pytest --browser-type=firefox
+
+# Generate and view Allure report
+pytest --alluredir=reports/allure-results
 allure serve reports/allure-results
 ```
 
@@ -107,6 +108,8 @@ Set `TEST_ENV` in `.env` or pass `--env` to pytest:
 | `staging` | `true` | `0ms` |
 | `prod` | `true` | `0ms` |
 
+All environment settings live in `config/config.yaml`.
+
 ---
 
 ## Test Markers
@@ -114,54 +117,48 @@ Set `TEST_ENV` in `.env` or pass `--env` to pytest:
 | Marker | Description |
 |--------|-------------|
 | `e2e` | Full end-to-end user flows |
-| `auth` | Login/authentication tests |
+| `auth` | Authentication-related tests |
 | `regression` | Full regression suite |
+| `slow` | Tests that take a long time to run |
 
 ```bash
-# Run e2e tests
 pytest -m e2e
-
-# Exclude slow tests
-pytest -m "not slow"
-
-# Run auth tests
 pytest -m auth
+pytest -m "not slow"
 ```
 
 ---
 
-## Reporting
+## What Gets Captured on Failure
 
-### Allure (recommended)
+Configured in `config.yaml` under `reporting`:
 
-```bash
-pytest tests/ --alluredir=reports/allure-results
-allure serve reports/allure-results
-```
-
-### pytest-html
-
-```bash
-pytest tests/ --html=reports/html/report.html --self-contained-html
-```
+- **Screenshot** — saved to `reports/screenshots/`
+- **Video** — saved to `reports/videos/`
+- **Playwright Trace** — saved to `reports/traces/` (open with `playwright show-trace <file.zip>`)
+- **Log file** — `reports/test_run.log`
 
 ---
 
-## CI/CD
+## Current Test Coverage
 
-GitHub Actions workflow (`.github/workflows/ci.yml`) runs:
+### `tests/e2e/testLoginError.py`
 
-- **On every push / PR** → E2E tests
-- **Nightly (02:00 UTC)** → Full E2E suite across Chromium, Firefox, WebKit
-- **Manual trigger** → Choose environment + suite
+End-to-end scenario verifying the unauthenticated add-to-trolley flow:
 
-Allure reports are automatically published to GitHub Pages on `main`.
+1. Navigate to `sainsburys.co.uk`
+2. Click the **Groceries** menu item
+3. Scroll to a product and click **Add**
+4. Verify the login page is displayed
+5. Submit invalid credentials
+6. Assert the exact error message is shown:
+   > *"That email or password doesn't look right. Please try again or reset your password below. Too many failed attempts will lock your account."*
 
 ---
 
 ## Adding New Pages
 
-1. Create `pages/your_page.py` extending `BasePage`
+1. Create `pages/yourPage.py` extending `BasePage`
 2. Define selectors as class-level constants
 3. Add action and assertion methods
 4. Register a pytest fixture in `conftest.py`
@@ -173,11 +170,11 @@ Allure reports are automatically published to GitHub Pages on `main`.
 
 ```python
 import pytest
-from pages.home_page import HomePage
+from pages.homePage import HomePage
 
 @pytest.mark.e2e
 class TestExample:
-    def test_something(self, home_page: HomePage):
-        home_page.open()
-        home_page.assert_page_loaded()
+    def test_something(self, homePage: HomePage):
+        homePage.open()
+        homePage.assertPageLoaded()
 ```
