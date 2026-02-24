@@ -13,6 +13,7 @@ A Playwright + Python test automation framework for [sainsburys.co.uk](https://w
 | [Allure](https://allurereport.org/) | HTML reporting |
 | [PyYAML](https://pyyaml.org/) | Config management via `config.yaml` |
 | [python-dotenv](https://pypi.org/project/python-dotenv/) | Environment variable loading |
+| GitHub Actions | CI/CD pipeline |
 
 ---
 
@@ -20,10 +21,12 @@ A Playwright + Python test automation framework for [sainsburys.co.uk](https://w
 
 ```
 sainsburysWebAutomationUsingPlaywrightPython/
+├── .github/
+│   └── workflows/
+│       └── ci.yml           # GitHub Actions CI/CD pipeline
 ├── config/
 │   ├── config.yaml          # Environment configs (dev / staging / prod)
-│   ├── settings.py          # Typed config loader
-│   └── __init__.py
+│   └── settings.py          # Typed config loader
 ├── pages/
 │   ├── basePage.py          # Reusable base class for all POMs
 │   ├── homePage.py          # Home page POM
@@ -153,6 +156,24 @@ End-to-end scenario verifying the unauthenticated add-to-trolley flow:
 5. Submit invalid credentials
 6. Assert the exact error message is shown:
    > *"That email or password doesn't look right. Please try again or reset your password below. Too many failed attempts will lock your account."*
+
+---
+
+## CI/CD — GitHub Actions
+
+The workflow at `.github/workflows/ci.yml` runs automatically:
+
+| Trigger | What runs |
+|---------|-----------|
+| Push / PR to `main` or `develop` | Full E2E suite |
+| Nightly at 02:00 UTC | Full E2E suite across Chromium, Firefox, WebKit |
+| Manual (`workflow_dispatch`) | Choose environment (`dev` / `staging` / `prod`) and suite (`e2e` / `regression` / `all`) |
+
+**Artifacts uploaded per run (retained 14 days):**
+- Screenshots, traces, and HTML reports — one set per browser
+- Allure results — merged and published to **GitHub Pages** on `main`
+
+To trigger manually from the GitHub UI: **Actions → Sainsbury's UI Automation → Run workflow**.
 
 ---
 
