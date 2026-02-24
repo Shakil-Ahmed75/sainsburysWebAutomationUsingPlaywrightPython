@@ -13,7 +13,10 @@ logger = logging.getLogger(__name__)
 @pytest.mark.e2e
 class TestAddToTrolleyLoginError:
     """
-    End-to-end scenario:
+    TC:001 Verify user is redirected to login page when adding product
+           and receives error for invalid credentials
+
+    Steps:
       1. Navigate to https://www.sainsburys.co.uk/
       2. Click the 'Groceries' menu item in the top navigation
       3. On the Groceries page, scroll down to reveal products
@@ -27,12 +30,15 @@ class TestAddToTrolleyLoginError:
           your account."
     """
 
+    @pytest.mark.parametrize("tc_id", ["TC:001"], ids=["TC:001"])
     def test_addProductTriggersLoginAndInvalidCredentialsError(
         self,
+        tc_id: str,
         homePage: HomePage,
         groceriesPage: GroceriesPage,
         loginPage: LoginPage,
     ) -> None:
+        logger.info(f"[{tc_id}] Verify user is redirected to login page when adding product and receives error for invalid credentials")
 
         invalidEmail    = generateRandomEmail()
         invalidPassword = generateRandomPassword()
